@@ -1,5 +1,14 @@
 #! /bin/bash
 
+echo ___________Login interactively to Azure account___________________
+if az account show &> /dev/null; then
+  echo "Already logged in. Skipping login."
+  az account set --subscription $AZURE_SUBSCRIPTION_ID
+  az account show
+else
+  az login --tenant $AZURE_TENANT_ID
+fi
+
 while getopts n:l:c: flag
 do
     case "${flag}" in
@@ -30,59 +39,70 @@ echo "Start time: $(date)"
 ##################################################
 
 # create resource group
-az group create --name $GROUP --location $LOCATION
+# az group create --name $GROUP --location $LOCATION
 
 # create container registry
-az acr create --resource-group $GROUP --name $REGISTRY --sku Basic --admin-enabled true
+# az acr create --resource-group $GROUP --name $REGISTRY --sku Basic --admin-enabled true
 
 # retrieve registry credentials
 REGISTRY_URL=https://${REGISTRY}.azurecr.io
 REGISTRY_USERNAME=$(az acr credential show --name $REGISTRY --query username | xargs)
 REGISTRY_PASSWORD=$(az acr credential show --name $REGISTRY --query passwords[0].value | xargs)
 
-# build solution
-# cd ./src && dotnet restore && dotnet build && cd ../
-
 ################################################## 
 ### BUILD IMAGES
+
+### The --image parameter defines the name and tag 
+### of the image using the format: '-t repo/image:tag'. 
+### Multiple tags are supported by passing -t 
+### multiple times.
+
+### The final parameter is the <SOURCE_LOCATION>
+### The local source code directory path (e.g., './src'), 
+### or the URL to a git repository or a remote tarball,
+### or the repository of an OCI artifact in an Azure 
+### container registry.
 ##################################################
 
+# build solution locally (if needed)
+# cd ./src && dotnet restore && dotnet build && cd ../
+
 # build accounting service
-az acr build --image reddog/accounting-service:{{.Run.ID}} --image reddog/accounting-service:latest --registry $REGISTRY -f ./src/RedDog.AccountingService/Dockerfile ./src
+# az acr build --image reddog/accounting-service:{{.Run.ID}} --image reddog/accounting-service:latest --registry $REGISTRY -f ./src/RedDog.AccountingService/Dockerfile ./src
 
 # build bootstrapper
-az acr build --image reddog/bootstrapper:{{.Run.ID}} --image reddog/bootstrapper:latest --registry $REGISTRY -f ./src/RedDog.Bootstrapper/Dockerfile ./src
+# az acr build --image reddog/bootstrapper:{{.Run.ID}} --image reddog/bootstrapper:latest --registry $REGISTRY -f ./src/RedDog.Bootstrapper/Dockerfile ./src
 
 # build corporate transfer service
-az acr build --image reddog/corporate-transfer:{{.Run.ID}} --image reddog/corporate-transfer:latest --registry $REGISTRY ./src/RedDog.CorporateTransferService
+# az acr build --image reddog/corporate-transfer:{{.Run.ID}} --image reddog/corporate-transfer:latest --registry $REGISTRY ./src/RedDog.CorporateTransferService
 
 # build loyalty service
-az acr build --image reddog/loyalty-service:{{.Run.ID}} --image reddog/loyalty-service:latest --registry $REGISTRY -f ./src/RedDog.LoyaltyService/Dockerfile ./src
+# az acr build --image reddog/loyalty-service:{{.Run.ID}} --image reddog/loyalty-service:latest --registry $REGISTRY -f ./src/RedDog.LoyaltyService/Dockerfile ./src
 
 # build make line service
-az acr build --image reddog/make-line:{{.Run.ID}} --image reddog/make-line:latest --registry $REGISTRY -f ./src/RedDog.MakeLineService/Dockerfile ./src
+# az acr build --image reddog/make-line:{{.Run.ID}} --image reddog/make-line:latest --registry $REGISTRY -f ./src/RedDog.MakeLineService/Dockerfile ./src
 
 # build order service
-az acr build --image reddog/order-service:{{.Run.ID}} --image reddog/order-service:latest --registry $REGISTRY -f ./src/RedDog.OrderService/Dockerfile ./src
+# az acr build --image reddog/order-service:{{.Run.ID}} --image reddog/order-service:latest --registry $REGISTRY -f ./src/RedDog.OrderService/Dockerfile ./src
 
 # build receipt service
-az acr build --image reddog/receipt-service:{{.Run.ID}} --image reddog/receipt-service:latest --registry $REGISTRY -f ./src/RedDog.ReceiptGenerationService/Dockerfile ./src
+# az acr build --image reddog/receipt-service:{{.Run.ID}} --image reddog/receipt-service:latest --registry $REGISTRY -f ./src/RedDog.ReceiptGenerationService/Dockerfile ./src
 
 # build UI
-az acr build --image reddog/ui:{{.Run.ID}} --image reddog/ui:latest --registry $REGISTRY ./src/RedDog.UI
+# az acr build --image reddog/ui:{{.Run.ID}} --image reddog/ui:latest --registry $REGISTRY ./src/RedDog.UI
 
 # build virtual customer
-az acr build --image reddog/virtual-customer:{{.Run.ID}} --image reddog/virtual-customer:latest --registry $REGISTRY ./src/RedDog.VirtualCustomer
+# az acr build --image reddog/virtual-customer:{{.Run.ID}} --image reddog/virtual-customer:latest --registry $REGISTRY ./src/RedDog.VirtualCustomer
 
 # build virtual worker
-az acr build --image reddog/virtual-worker:{{.Run.ID}} --image reddog/virtual-worker:latest --registry $REGISTRY -f ./src/RedDog.VirtualWorker/Dockerfile ./src
+# az acr build --image reddog/virtual-worker:{{.Run.ID}} --image reddog/virtual-worker:latest --registry $REGISTRY -f ./src/RedDog.VirtualWorker/Dockerfile ./src
 
 ################################################## 
 ### PROVISION INFRASTRUCTURE
 ##################################################
 
 # provision infrastructure
-az deployment sub create --name $NAME --location $LOCATION --template-file ./infra/main.bicep --parameters name=$NAME --parameters location=$LOCATION --parameters uniqueSuffix=$SUFFIX
+# az deployment sub create --name $NAME --location $LOCATION --template-file ./infra/main.bicep --parameters name=$NAME --parameters location=$LOCATION --parameters uniqueSuffix=$SUFFIX
 
 ################################################## 
 ### DEPLOY IMAGES
@@ -110,10 +130,10 @@ az deployment sub create --name $NAME --location $LOCATION --template-file ./inf
 # az containerapp up --name receipt-service --resource-group $GROUP --image ${REGISTRY}.azurecr.io/reddog/receipt-service:latest
 
 # deploy UI image
-# az webapp config container set --name ui-${SUFFIX} --resource-group $GROUP --docker-custom-image-name ${REGISTRY}.azurecr.io/reddog/ui:latest --docker-registry-server-url $REGISTRY_URL --docker-registry-server-user $REGISTRY_USERNAME --docker-registry-server-password $REGISTRY_PASSWORD
+az webapp config container set --name ui-${SUFFIX} --resource-group $GROUP --docker-custom-image-name ${REGISTRY}.azurecr.io/reddog/ui:latest --docker-registry-server-url $REGISTRY_URL --docker-registry-server-user $REGISTRY_USERNAME --docker-registry-server-password $REGISTRY_PASSWORD
 
 # deploy Virtual Customer image
-# az functionapp config container set --name vc-${SUFFIX} --resource-group $GROUP --docker-custom-image-name ${REGISTRY}.azurecr.io/reddog/virtual-customer:latest --docker-registry-server-url $REGISTRY_URL --docker-registry-server-user $REGISTRY_USERNAME --docker-registry-server-password $REGISTRY_PASSWORD
+az functionapp config container set --name vc-${SUFFIX} --resource-group $GROUP --docker-custom-image-name ${REGISTRY}.azurecr.io/reddog/virtual-customer:latest --docker-registry-server-url $REGISTRY_URL --docker-registry-server-user $REGISTRY_USERNAME --docker-registry-server-password $REGISTRY_PASSWORD
 
 # deploy virtual worker image
 # az containerapp up --name virtual-worker --resource-group $GROUP --image ${REGISTRY}.azurecr.io/reddog/virtual-worker:latest 

@@ -3,7 +3,7 @@ param location string
 param serviceBusNamespaceName string
 param registryName string
 
-resource cappsEnv 'Microsoft.App/managedEnvironments@2022-01-01-preview' existing = {
+resource cappsEnv 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: containerAppsEnvName
 }
 

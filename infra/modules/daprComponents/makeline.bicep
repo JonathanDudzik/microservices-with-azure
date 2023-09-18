@@ -5,11 +5,11 @@ resource redis 'Microsoft.Cache/redis@2020-12-01' existing = {
   name: redisName
 }
 
-resource cappsEnv 'Microsoft.App/managedEnvironments@2022-01-01-preview' existing = {
+resource cappsEnv 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: containerAppsEnvName
 }
 
-resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2022-01-01-preview' = {
+resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'reddog.state.makeline'
   parent: cappsEnv
   properties: {

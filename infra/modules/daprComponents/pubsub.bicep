@@ -5,11 +5,11 @@ resource serviceBus 'Microsoft.ServiceBus/namespaces@2021-06-01-preview' existin
   name: serviceBusNamespaceName
 }
 
-resource cappsEnv 'Microsoft.App/managedEnvironments@2022-01-01-preview' existing = {
+resource cappsEnv 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: containerAppsEnvName
 }
 
-resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2022-01-01-preview' = {
+resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'reddog.pubsub'
   parent: cappsEnv
   properties: {

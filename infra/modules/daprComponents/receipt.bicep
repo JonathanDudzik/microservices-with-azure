@@ -5,11 +5,11 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing 
   name: storageAccountName
 }
 
-resource cappsEnv 'Microsoft.App/managedEnvironments@2022-01-01-preview' existing = {
+resource cappsEnv 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: containerAppsEnvName
 }
 
-resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2022-01-01-preview' = {
+resource daprComponent 'Microsoft.App/managedEnvironments/daprComponents@2023-05-01' = {
   name: 'reddog.binding.receipt'
   parent: cappsEnv
   properties: {
